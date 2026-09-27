@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elephant Detection System</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --sky:#1C8FCB;
+    --leaf:#2E9D63;
+    --gold:#F4A300;
+    --coral:#FF5A36;
+    --blue:#3D8BD4;
+    --purple:#8B5FBF;
+    --ink:#1A1A1A;
+    --muted:#6b7280;
+    --card-bg:#ffffff;
+    --page-bg:#ffffff;
+    --sans:'Inter', sans-serif;
+    --display:'Poppins', sans-serif;
+    --mono:'JetBrains Mono', monospace;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      linear-gradient(180deg, #eaf6ff 0%, var(--page-bg) 260px);
+    color:var(--ink);
+    font-family:var(--sans);
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(100deg, var(--sky) 0%, var(--leaf) 55%, var(--gold) 100%);
+    padding:22px 32px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    color:#fff;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    right:-40px;top:-60px;
+    width:220px;height:220px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.12);
+  }
+  header::before{
+    content:"";
+    position:absolute;
+    right:90px;bottom:-90px;
+    width:180px;height:180px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.10);
+  }
+
+  .header-left{display:flex;align-items:center;gap:10px;z-index:1;}
+  .live-dot{
+    width:9px;height:9px;border-radius:50%;
+    background:rgba(255,255,255,0.6);
+    transition:background .3s ease, box-shadow .3s ease;
+  }
+  .live-dot.connected{background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,0.3);}
+  .live-dot.offline{background:#2b1d1a;box-shadow:0 0 0 4px rgba(0,0,0,0.15);}
+  .live-text{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    opacity:.9;
+  }
+
+  .title-block{display:flex;flex-direction:column;gap:2px;z-index:1;}
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    opacity:.85;
+  }
+  .title{font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:.01em;}
+
+  .clock{
+    font-family:var(--mono);
+    font-size:13px;
+    opacity:.9;
+    z-index:1;
+  }
+
+  /* ---------- Main ---------- */
+  main{
+    max-width:1040px;
+    margin:0 auto;
+    padding:36px 32px 64px;
+  }
+
+  .signal-band{
+    position:relative;
+    border-radius:20px;
+    padding:30px 30px;
+    display:flex;
+    align-items:center;
+    gap:22px;
+    color:#fff;
+    background:linear-gradient(135deg, #9aa1a8, #6b7280);
+    box-shadow:0 10px 26px rgba(0,0,0,0.12);
+    transition:background .4s ease, box-shadow .4s ease;
+  }
+  .signal-band.safe{
+    background:linear-gradient(135deg, #38b876, var(--leaf));
+    box-shadow:0 10px 28px rgba(46,157,99,0.35);
+  }
+  .signal-band.danger{
+    background:linear-gradient(135deg, #ff7a52, var(--coral));
+    box-shadow:0 10px 30px rgba(255,90,54,0.4);
+    animation:pulse-shadow 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse-shadow{
+    0%,100%{box-shadow:0 10px 30px rgba(255,90,54,0.35);}
+    50%{box-shadow:0 12px 40px rgba(255,90,54,0.65);}
+  }
+
+  .signal-light{
+    flex-shrink:0;
+    width:56px;height:56px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.22);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .signal-light svg{width:28px;height:28px;}
+
+  .signal-copy{display:flex;flex-direction:column;gap:4px;}
+  .signal-label{font-family:var(--display);font-weight:700;font-size:20px;margin:0;}
+  .signal-detail{font-size:13.5px;opacity:.92;margin:0;}
+
+  /* ---------- Cards ---------- */
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:18px;
+    margin-top:28px;
+  }
+  @media (max-width:880px){.cards{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:520px){.cards{grid-template-columns:1fr;}}
+
+  .card{
+    --accent:var(--leaf);
+    background:var(--card-bg);
+    border-radius:16px;
+    border-top:5px solid var(--accent);
+    box-shadow:0 4px 16px rgba(20,20,30,0.06);
+    padding:20px 20px 18px;
+  }
+  .card.c-leaf{--accent:var(--leaf);}
+  .card.c-blue{--accent:var(--blue);}
+  .card.c-gold{--accent:var(--gold);}
+  .card.c-purple{--accent:var(--purple);}
+
+  .card-top{display:flex;align-items:center;gap:8px;margin-bottom:18px;}
+  .card-icon{color:var(--accent);width:20px;height:20px;flex-shrink:0;}
+  .card-label{
+    font-family:var(--display);
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .card-value{
+    font-family:var(--mono);
+    font-size:32px;
+    font-weight:700;
+    line-height:1;
+    color:var(--ink);
+  }
+  .card-unit{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:6px;
+    letter-spacing:.04em;
+  }
+
+  footer{
+    margin-top:28px;
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:6px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  footer code{
+    font-family:var(--mono);
+    background:#f3f4f4;
+    border:1px solid #e3e5e2;
+    padding:1px 6px;
+    border-radius:3px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <span class="live-dot" id="liveDot"></span>
+    <span class="live-text" id="liveText">CONNECTING</span>
+  </div>
+  <div class="title-block">
+    <span class="eyebrow">Real-Time Monitoring</span>
+    <span class="title">Elephant Detection System</span>
+  </div>
+  <span class="clock" id="clock">--:--:--</span>
+</header>
+
+<main>
+
+  <div class="signal-band" id="signalBand">
+    <div class="signal-light" id="signalLight">
+      <!-- icon swapped by JS -->
+    </div>
+    <div class="signal-copy">
+      <p class="signal-label" id="signalLabel">Waiting for sensor data…</p>
+      <p class="signal-detail" id="signalDetail">Connecting to the IR and force sensor feed.</p>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card c-leaf">
+      <div class="card-top">
+        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l4-4 3 3 5-6 6 6"/><path d="M14 7h7v7"/></svg>
+        <span class="card-label">Elephant Distance</span>
+      </div>
+      <div class="card-value" id="elephantDistance">--</div>
+      <div class="card-unit">cm</div>
+    </div>
+
+    <div class="card c-blue">
+      <div class="card-top">
+        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8v3M11 8v5M15 8v3"/></svg>
+        <span class="card-label">Trolley Distance</span>
+      </div>
+      <div class="card-value" id="trolleyDistance">--</div>
+      <div class="card-unit">cm</div>
+    </div>
+
+    <div class="card c-gold">
+      <div class="card-top">
+        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a8 8 0 100-16 8 8 0 000 16z"/><path d="M12 13l4-4"/><path d="M12 9v0"/></svg>
+        <span class="card-label">Train Speed</span>
+      </div>
+      <div class="card-value" id="trainSpeed">--</div>
+      <div class="card-unit">PWM</div>
+    </div>
+
+    <div class="card c-purple">
+      <div class="card-top">
+        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a8 8 0 100-16 8 8 0 000 16z"/><path d="M12 13l4-4"/><path d="M12 9v0"/></svg>
+        <span class="card-label">Trolley Speed</span>
+      </div>
+      <div class="card-value" id="trolleySpeed">--</div>
+      <div class="card-unit">PWM</div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Source: <code>ElephantDetection/current</code></span>
+    <span id="lastUpdated">No data received yet</span>
+  </footer>
+
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  // ---------------------------------------------------------------
+  // 1. Paste your Firebase project config here.
+  //    Find it in: Firebase Console -> Project settings -> General
+  //    -> Your apps -> SDK setup and configuration
+  // ---------------------------------------------------------------
+  const firebaseConfig = {
+    apiKey: "AIzaSyBEw-Q4gDttWuQu8w77Y1OAHrgZ5vGplnI",
+    authDomain: "elephant-detection-syste-64977.firebaseapp.com",
+    databaseURL: "https://elephant-detection-syste-64977-default-rtdb.firebaseio.com",
+    projectId: "elephant-detection-syste-64977",
+    storageBucket: "elephant-detection-syste-64977.firebasestorage.app",
+    messagingSenderId: "917585777598",
+    appId: "1:917585777598:web:aec7cc3a7d9f9f4d279fef"
+  };
+
+  const DATA_PATH = "ElephantDetection/current";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const ICONS = {
+    safe: '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>',
+    danger: '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h0"/><path d="M10.3 3.9L2.6 17.1A1.6 1.6 0 004 19.5h16a1.6 1.6 0 001.4-2.4L13.7 3.9a1.6 1.6 0 00-2.8 0z"/></svg>',
+    unknown: '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16h0"/><path d="M9.5 9a2.5 2.5 0 015 0c0 1.5-2.5 2-2.5 3.5"/></svg>'
+  };
+
+  // --- DOM references ---
+  const el = {
+    elephantDistance: document.getElementById('elephantDistance'),
+    trolleyDistance: document.getElementById('trolleyDistance'),
+    trainSpeed: document.getElementById('trainSpeed'),
+    trolleySpeed: document.getElementById('trolleySpeed'),
+    signalBand: document.getElementById('signalBand'),
+    signalLight: document.getElementById('signalLight'),
+    signalLabel: document.getElementById('signalLabel'),
+    signalDetail: document.getElementById('signalDetail'),
+    liveDot: document.getElementById('liveDot'),
+    liveText: document.getElementById('liveText'),
+    lastUpdated: document.getElementById('lastUpdated'),
+    clock: document.getElementById('clock'),
+  };
+
+  // --- Clock ---
+  function tickClock(){
+    el.clock.textContent = new Date().toLocaleTimeString();
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  // --- Connection status ---
+  onValue(ref(db, ".info/connected"), (snap) => {
+    const connected = snap.val() === true;
+    el.liveDot.className = "live-dot " + (connected ? "connected" : "offline");
+    el.liveText.textContent = connected ? "LIVE" : "OFFLINE";
+  });
+
+  // --- Sensor status classification ---
+  function classifyStatus(raw){
+    if (raw === null || raw === undefined || raw === "") {
+      return { state: "unknown", label: "Waiting for sensor data…", detail: "No reading received yet." };
+    }
+    const text = String(raw);
+    const lower = text.toLowerCase();
+    if (lower.includes("elephant")) {
+      return { state: "danger", label: "Elephant Detected", detail: text };
+    }
+    if (lower.includes("normal")) {
+      return { state: "safe", label: "Status is Normal", detail: "No elephant activity detected on the track." };
+    }
+    return { state: "unknown", label: text, detail: "" };
+  }
+
+  function renderNumber(targetEl, value){
+    targetEl.textContent = (value === null || value === undefined || value === "") ? "--" : value;
+  }
+
+  // --- Main data listener ---
+  onValue(ref(db, DATA_PATH), (snapshot) => {
+    const data = snapshot.val() || {};
+
+    renderNumber(el.elephantDistance, data["Elephant Distance"]);
+    renderNumber(el.trolleyDistance, data["Trolley Distance"]);
+    renderNumber(el.trainSpeed, data["Train Speed"]);
+    renderNumber(el.trolleySpeed, data["Trolley Speed"]);
+
+    const status = classifyStatus(data["IR and Force Sensor"]);
+    el.signalBand.className = "signal-band " + status.state;
+    el.signalLight.innerHTML = ICONS[status.state] || ICONS.unknown;
+    el.signalLabel.textContent = status.label;
+    el.signalDetail.textContent = status.detail;
+
+    el.lastUpdated.textContent = "Last update: " + new Date().toLocaleTimeString();
+  });
+</script>
+
+</body>
+</html>
